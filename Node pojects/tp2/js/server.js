@@ -7,7 +7,7 @@ const {Server} = require("socket.io");
 const io =new Server(server);
 var path = require("path");
 let PORT =8080;
-var typingUsers = [];
+//var typingUsers = [];
 
 //Port d'écoute
 server.listen(PORT,()=>  {
@@ -59,7 +59,7 @@ io.on('connection',(socket)=>{
  
         console.log(socket.nickname+':'+message);
 
-        console.broadcast.emit(socket.nickame+':'+messages);
+        //socket.broadcast.emit(socket.nickame+':'+message);
         io.emit('reception_message', message);
        
     });
