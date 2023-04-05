@@ -13,54 +13,39 @@ var input = document.getElementById('input');
 var id_salon = 'salon'; // Variable définissant le salon général comme destinataire
 var lesMessages = []; // Tableau qui va contenir l'ensemble des messages envoyés
 var user = null;
+var pseudotest =null;
 
 // Gestion de l'envoi de message par le formulaire
 form.addEventListener('submit', (e) => {
-e.preventDefault();
-var laDate=new Date();
-// Création de l'objet message à envoyer
+  e.preventDefault();
+  var laDate=new Date();
+  //Création de l'objet message à envoyer
 
 
-var message = {
-emmet_id: user,
-dest_id:id,
-pseudo:pseudo_client,
-msg: input.value,
-//id_utilisateur_dest: id_salon, // Correction de la variable de destination
-date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
-recu:false
-}
-
-/*///
-// Envoi du message au serveur via le socket
-
-socket.emit('emission_message', message);
-socket.to(dest_id).emit(message);
-*/
-function emission_message(message, isPrivate = false, recipient = 'salon') {
-  // Création de l'objet message à envoyer
-  var messageObj = {
-    emmet_id: user,
-    dest_id: recipient,
-    pseudo: pseudo_client,
-    msg: message,
-    date: new Date().toLocaleDateString() + ' - ' + new Date().toLocaleTimeString(),
-    recu: false
+  var message = {
+  emmet_id: socket.id,
+  dest_id:id_salon,
+  pseudo: pseudotest,
+  msg: input.value,
+ // id_utilisateur_dest: id_salon, // Correction de la variable de destination
+  date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
+  recu:false
   }
 
+  console.log('pseudo'+pseudotest)
   // Envoi du message au serveur via le socket
-  socket.emit('emission_message', messageObj);
 
-  if (isPrivate) {
-    socket.to(recipient).emit('emission_message', messageObj);
-  }
-}
-
-////*/
+  console.log(JSON.stringify(message))
+  socket.emit('emission_message', (message));
+  //socket.to(dest_id).emit(message);
 
 
-// Vidage du champ de saisie
-input.value = '';
+
+
+
+
+  // Vidage du champ de saisie
+  input.value = '';
 
 });
 
@@ -95,14 +80,20 @@ user = utilisateur.id_client;
 
 // Si l'utilisateur n'est pas la personne connectée, on l'ajoute à la liste des utilisateurs affichée
 if (user !== socket.id && utilisateur.pseudo_client !=='Salon') {
+  console.log("a"+utilisateur.pseudo_client)
+  pseudotest = utilisateur.pseudo_client;
+  console.log('pseudo'+pseudotest)
   const userElem = document.createElement('div');
   userElem.innerHTML = '<a href="#" onClick="salon(\'' + utilisateur.id_client + '\')" >' + utilisateur.pseudo_client + '</a>';
   // Correction du paramètre de la fonction salon
   usersContainer.appendChild(userElem);
+  //if (socket.id=)
 } 
 
 // Si l'utilisateur est seul, on affiche un message spécifique
 else if (utilisateurs.length == 1) {
+  console.log("b"+utilisateur.pseudo_client)
+
   const userElem = document.createElement('div')
   userElem.innerHTML = '<p> Vous êtes seul(e) </p>';
   usersContainer.appendChild(userElem);
@@ -133,7 +124,7 @@ function salon(id) {
     messageContainer.appendChild(messageElem);
   });
 }
-
+/*
 // Vérifie les messages non-lus, puis affiche un badge de notification
 // incrémenté à côté de l'utilisateur
 
@@ -166,3 +157,4 @@ function check_unread() {
     }
   });
 }
+*/
