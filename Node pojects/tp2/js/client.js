@@ -27,7 +27,7 @@ form.addEventListener('submit', (e) => {
   dest_id:id_salon,
   pseudo: pseudotest,
   msg: input.value,
- // id_utilisateur_dest: id_salon, // Correction de la variable de destination
+  id_utilisateur_dest: id_salon, // Correction de la variable de destination
   date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
   recu:false
   }
@@ -62,50 +62,57 @@ lesMessages.push(message);
 // Vérification des messages non-lus
 check_unread();
 });
+// Fonction pour vider le champ des messages
+function clearMessages() {
+    messageContainer.innerHTML = '';
+ }
+  // Réception de la liste des utilisateurs connectés envoyée par le serveur
+  socket.on('reception_utilisateurs', (utilisateurs) => {
+  // Vidage de la liste des utilisateurs affichée
+  usersContainer.innerHTML = '';
 
-// Réception de la liste des utilisateurs connectés envoyée par le serveur
-socket.on('reception_utilisateurs', (utilisateurs) => {
-// Vidage de la liste des utilisateurs affichée
-usersContainer.innerHTML = '';
+  // Ajout du salon général nommé salon à la liste des utilisateurs affichée
+  const salonElem = document.createElement('div');
+  salonElem.innerHTML = '<a href="#" onClick="salon(\'salon\')"> Salon :</a>'; // Correction du paramètre de la fonction salon
+  usersContainer.appendChild(salonElem);
 
-// Ajout du salon général nommé salon à la liste des utilisateurs affichée
-const salonElem = document.createElement('div');
-salonElem.innerHTML = '<a href="#" onClick="salon(\'salon\')"> Salon :</a>'; // Correction du paramètre de la fonction salon
-usersContainer.appendChild(salonElem);
+  // Parcours de la liste des utilisateurs
+  utilisateurs.forEach((utilisateur) => {
+  // Récupération de l'ID de l'utilisateur
+  user = utilisateur.id_client;
 
-// Parcours de la liste des utilisateurs
-utilisateurs.forEach((utilisateur) => {
-// Récupération de l'ID de l'utilisateur
-user = utilisateur.id_client;
+  // Si l'utilisateur n'est pas la personne connectée, on l'ajoute à la liste des utilisateurs affichée
+  if (user !== socket.id && utilisateur.pseudo_client !=='Salon') {
+    console.log("a"+utilisateur.pseudo_client)
+    pseudotest = utilisateur.pseudo_client;
+    console.log('pseudo'+pseudotest)
+    const userElem = document.createElement('div');
+    userElem.innerHTML = '<a href="#" onClick="salon(\'' + utilisateur.id_client + '\')" >' + utilisateur.pseudo_client + '</a>';
+    // Correction du paramètre de la fonction salon
+    usersContainer.appendChild(userElem);
 
-// Si l'utilisateur n'est pas la personne connectée, on l'ajoute à la liste des utilisateurs affichée
-if (user !== socket.id && utilisateur.pseudo_client !=='Salon') {
-  console.log("a"+utilisateur.pseudo_client)
-  pseudotest = utilisateur.pseudo_client;
-  console.log('pseudo'+pseudotest)
-  const userElem = document.createElement('div');
-  userElem.innerHTML = '<a href="#" onClick="salon(\'' + utilisateur.id_client + '\')" >' + utilisateur.pseudo_client + '</a>';
-  // Correction du paramètre de la fonction salon
-  usersContainer.appendChild(userElem);
-  //if (socket.id=)
-} 
+  } 
 
-// Si l'utilisateur est seul, on affiche un message spécifique
-else if (utilisateurs.length == 1) {
-  console.log("b"+utilisateur.pseudo_client)
 
-  const userElem = document.createElement('div')
-  userElem.innerHTML = '<p> Vous êtes seul(e) </p>';
-  usersContainer.appendChild(userElem);
-}
+  // Si l'utilisateur est seul, on affiche un message spécifique
+  else if (utilisateurs.length == 1) {
+    console.log("b"+utilisateur.pseudo_client)
 
-});
-});
+    const userElem = document.createElement('div')
+    userElem.innerHTML = '<p> Vous êtes seul(e) </p>';
+    usersContainer.appendChild(userElem);
+  }
+
+  });
+  });
+
+
 
 // Affichage des messages en fonction du choix de l'utilisateur
 // Soit les messages du salon général
 // Soit les messages d'une conversation privée avec un autre utilisateur
 
+/*
 function salon(id) {
   // Vérification si l'ID correspond à une conversation privée ou au salon général
   var isPrivate = id !== 'salon';
@@ -123,7 +130,26 @@ function salon(id) {
     messageElem.innerHTML = '<p>' + message.msg + '</p>';
     messageContainer.appendChild(messageElem);
   });
+  
+}*/
+
+function salon(id_utilisateur_dest) {
+  clearMessages(); // Effacement du contenu de la zone de messages
+
+  socket.emit('changement_salon', id_utilisateur_dest); // Demande au serveur de changer de salon
+
+  document.getElementById('titre').innerHTML = 'Salon ' + id_salon; // Modification du titre de la page
+  input.value='';
 }
+
+function clearMessages() {
+  var messageContainer = document.getElementById('message-container');
+  messageContainer.innerHTML = ''; // Suppression des éléments enfants du conteneur de messages
+}
+
+
+
+
 /*
 // Vérifie les messages non-lus, puis affiche un badge de notification
 // incrémenté à côté de l'utilisateur
