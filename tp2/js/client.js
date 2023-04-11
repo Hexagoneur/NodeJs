@@ -23,13 +23,13 @@ form.addEventListener('submit', (e) => {
 
 
   var message = {
-  emmet_id: socket.id,
-  dest_id:id_salon,
-  pseudo: pseudotest,
-  msg: input.value,
-  dest_id: id_utilisateur_dest, // Correction de la variable de destination
-  date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
-  recu:false
+    emmet_id: socket.id,
+    dest_id:id_salon,
+    pseudo: pseudotest,
+    msg: input.value,
+    dest_id: id_utilisateur_dest, // Correction de la variable de destination
+    date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
+    recu:false
   }
 
   console.log('pseudo'+pseudotest)
@@ -56,6 +56,7 @@ lesMessages.push(message);
 // Vérification des messages non-lus
 check_unread();
 });
+
 // Fonction pour vider le champ des messages
 function clearMessages() {
     messageContainer.innerHTML = '';
@@ -87,6 +88,7 @@ function clearMessages() {
     usersContainer.appendChild(userElem);
 
   } 
+
   if(socket.id== utilisateur.id_client){
     pseudotest = utilisateur.pseudo_client;
   }
@@ -104,6 +106,37 @@ function clearMessages() {
   });
   });
 
+function envoyerMessagePrive(dest_id,message){
+
+  var laDate = new Date();
+  var messagePrive = {
+    emmet_id: socket.id,
+    dest_id: dest_id,
+    pseudo: pseudotest,
+    msg: message,
+    date: laDate.toLocaleDateString() + ' - ' + laDate.toLocaleTimeString(),
+    recu: false
+  };
+  
+  socket.emit('emission_privé',message);
+}
+
+// Ecoute de l'événement 'reception_message'
+socket.on('reception_message', (message) => {
+  console.log(`Message reçu de ${message.emet_id}: ${message.contenu}`);
+});
+
+// Ecoute de l'événement 'emission_privé'
+socket.on('emission_privé', (message) => {
+  console.log(`Message privé reçu de ${message.emet_id}: ${message.msg}`);
+  // Si le message est destiné à l'utilisateur actuel, on l'affiche
+  if (message.dest_id === socket.id) {
+    const messageElem = document.createElement('div');
+    messageElem.innerHTML = '<p>' + message.pseudo + ": " + message.msg + '</p>';
+    messageContainer.appendChild(messageElem);
+    lesMessages
+  }
+});
 
 
 // Affichage des messages en fonction du choix de l'utilisateur
