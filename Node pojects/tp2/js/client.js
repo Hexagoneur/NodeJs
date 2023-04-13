@@ -9,13 +9,17 @@ var usersContainer = document.getElementById('utilisateurs');
 var form = document.getElementById('form');
 var input = document.getElementById('input');
 
+const createRoomButton = document.getElementById('create-room');
+
 // Définition des variables
 var id_salon = 'salon'; // Variable définissant le salon général comme destinataire
 var lesMessages = []; // Tableau qui va contenir l'ensemble des messages envoyés
 var user = null;
 var pseudotest =null;
-
+var id_utilisateur_dest=null;
 // Gestion de l'envoi de message par le formulaire
+
+
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   var laDate=new Date();
@@ -23,13 +27,13 @@ form.addEventListener('submit', (e) => {
 
 
   var message = {
-  emmet_id: socket.id,
-  dest_id:id_salon,
-  pseudo: pseudotest,
-  msg: input.value,
-  id_utilisateur_dest: id_salon, // Correction de la variable de destination
-  date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
-  recu:false
+    emmet_id: socket.id,
+    dest_id:id_salon,
+    pseudo: pseudotest,
+    msg: input.value,
+    dest_id: id_utilisateur_dest, // Correction de la variable de destination
+    date:laDate.toLocaleDateString()+' - '+laDate.toLocaleTimeString(),
+    recu:false
   }
 
   console.log('pseudo'+pseudotest)
@@ -37,13 +41,7 @@ form.addEventListener('submit', (e) => {
 
   console.log(JSON.stringify(message))
   socket.emit('emission_message', (message));
-  //socket.to(dest_id).emit(message);
-
-
-
-
-
-
+  socket.emit('emission_privé',(message));
   // Vidage du champ de saisie
   input.value = '';
 
@@ -53,15 +51,18 @@ form.addEventListener('submit', (e) => {
 socket.on('reception_message', (message) => {
 // Ajout du message à l'interface
 const messageElem = document.createElement('div');
-messageElem.innerHTML = '<p>' + message.msg + '</p>';
+messageElem.innerHTML = '<p>'+ message.pseudo +": "+message.msg + '</p>';
 messageContainer.appendChild(messageElem);
 
 // Ajout du message au tableau de messages
 lesMessages.push(message);
 
+
 // Vérification des messages non-lus
-check_unread();
+//check_unread();
+
 });
+
 // Fonction pour vider le champ des messages
 function clearMessages() {
     messageContainer.innerHTML = '';
@@ -82,16 +83,19 @@ function clearMessages() {
   user = utilisateur.id_client;
 
   // Si l'utilisateur n'est pas la personne connectée, on l'ajoute à la liste des utilisateurs affichée
-  if (user !== socket.id && utilisateur.pseudo_client !=='Salon') {
+  if (user !== socket.id && utilisateur.pseudo_client !=='salon') {
     console.log("a"+utilisateur.pseudo_client)
-    pseudotest = utilisateur.pseudo_client;
+    //pseudotest = utilisateur.pseudo_client;
     console.log('pseudo'+pseudotest)
     const userElem = document.createElement('div');
+    userElem.setAttribute('pseudo',utilisateur.pseudo_client) 
     userElem.innerHTML = '<a href="#" onClick="salon(\'' + utilisateur.id_client + '\')" >' + utilisateur.pseudo_client + '</a>';
     // Correction du paramètre de la fonction salon
     usersContainer.appendChild(userElem);
 
   } 
+
+
 
 
   // Si l'utilisateur est seul, on affiche un message spécifique
@@ -103,16 +107,74 @@ function clearMessages() {
     usersContainer.appendChild(userElem);
   }
 
+  if(socket.id== utilisateur.id_client){
+    pseudotest = utilisateur.pseudo_client;
+  }
   });
   });
 
+  // Création d'une room privée entre deux utilisateurs
+  createRoomButton.addEventListener('click', () => {
+    const emmet_id = $('#emmet_id').val();
+    const dest_id = $('#dest_id').val();
+    
+    // Envoi de la demande de création de room au serveur
+    socket.emit('create_room', { emmet_id, dest_id });
+  });
+
+  socket.on('room_created', (data) => {
+    const { roomName } = data;
+    
+    console.log(`Room ${roomName} créée`);
+  });
+
+
+
+
+
+
+
+
+
+
+function envoyerMessagePrive(dest_id,message){
+
+  var laDate = new Date();
+  var messagePrive = {
+    emmet_id: socket.id,
+    dest_id: dest_id,
+    pseudo: pseudotest,
+    msg: message,
+    date: laDate.toLocaleDateString() + ' - ' + laDate.toLocaleTimeString(),
+    recu: false
+  };
+  
+  socket.emit('emission_privé',message);
+}
+
+// Ecoute de l'événement 'reception_message'
+socket.on('reception_message', (message) => {
+  console.log(`Message reçu de ${message.emmet_id}: ${message.contenu}`);
+});
+
+// Ecoute de l'événement 'emission_privé'
+socket.on('emission_privé', (message) => {
+  console.log(`Message privé reçu de ${message.emmet_id}: ${message.msg}`);
+  // Si le message est destiné à l'utilisateur actuel, on l'affiche
+  if (message.dest_id === socket.id) {
+    const messageElem = document.createElement('div');
+    messageElem.innerHTML = '<p>' + messagePrive.pseudo + ": " + messagePrive.msg + '</p>';
+    messageContainer.appendChild(messageElem);
+    
+  }
+});
 
 
 // Affichage des messages en fonction du choix de l'utilisateur
 // Soit les messages du salon général
 // Soit les messages d'une conversation privée avec un autre utilisateur
 
-/*
+
 function salon(id) {
   // Vérification si l'ID correspond à une conversation privée ou au salon général
   var isPrivate = id !== 'salon';
@@ -125,27 +187,40 @@ function salon(id) {
    messageContainer.innerHTML == "";
 
   // Ajout des messages à l'interface
-  messages.forEach((message) => {
+  messages.forEach((message,messagePrive) => {
     const messageElem = document.createElement('div');
     messageElem.innerHTML = '<p>' + message.msg + '</p>';
+    messageElem.innerHTML = '<p>' + messagePrive.msg + '</p>';
     messageContainer.appendChild(messageElem);
   });
   
-}*/
+}
+
 
 function salon(id_utilisateur_dest) {
   clearMessages(); // Effacement du contenu de la zone de messages
 
   socket.emit('changement_salon', id_utilisateur_dest); // Demande au serveur de changer de salon
 
-  document.getElementById('titre').innerHTML = 'Salon ' + id_salon; // Modification du titre de la page
+  //document.getElementById('titre').innerHTML = 'Salon ' + lesMessages.dest_id; // Modification du titre de la page
   input.value='';
 }
 
 function clearMessages() {
   var messageContainer = document.getElementById('message-container');
-  messageContainer.innerHTML = ''; // Suppression des éléments enfants du conteneur de messages
+  messageContainer.innerHTML = ''; // Suppression des éléments dans le conteneur de messages
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -169,7 +244,7 @@ function check_unread() {
   }
 
   // Supprime le badge lorsque les messages sont lus
-  var messageContainer = document.getElementById('messages');
+  var messageContainer = document.getElementById('message-container');
   messageContainer.addEventListener('click', (e) => {
     if (e.target.nodeName === 'P') {
       const msgText = e.target.textContent;
