@@ -4,12 +4,10 @@ var socket = io(); // Création d'un socket.io
 socket.emit('set-pseudo', prompt("Pseudo ?"));
 
 // Récupération des éléments du DOM
-var messageContainer = document.getElementById('message-container');
+const messageContainer = document.getElementById('message-container');
 var usersContainer = document.getElementById('utilisateurs');
 var form = document.getElementById('form');
 var input = document.getElementById('input');
-
-const createRoomButton = document.getElementById('create-room');
 
 // Définition des variables
 var id_salon = 'salon'; // Variable définissant le salon général comme destinataire
@@ -18,8 +16,6 @@ var user = null;
 var pseudotest =null;
 var id_utilisateur_dest=null;
 // Gestion de l'envoi de message par le formulaire
-
-
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   var laDate=new Date();
@@ -41,7 +37,7 @@ form.addEventListener('submit', (e) => {
 
   console.log(JSON.stringify(message))
   socket.emit('emission_message', (message));
-  socket.emit('emission_privé',(message));
+  socket.emit('emision_privé',(message));
   // Vidage du champ de saisie
   input.value = '';
 
@@ -49,6 +45,8 @@ form.addEventListener('submit', (e) => {
 
 // Réception d'un message envoyé par le serveur
 socket.on('reception_message', (message) => {
+
+  
 // Ajout du message à l'interface
 const messageElem = document.createElement('div');
 messageElem.innerHTML = '<p>'+ message.pseudo +": "+message.msg + '</p>';
@@ -57,10 +55,7 @@ messageContainer.appendChild(messageElem);
 // Ajout du message au tableau de messages
 lesMessages.push(message);
 
-
 // Vérification des messages non-lus
-//check_unread();
-
 });
 
 // Fonction pour vider le champ des messages
@@ -95,7 +90,9 @@ function clearMessages() {
 
   } 
 
-
+  if(socket.id== utilisateur.id_client){
+    pseudotest = utilisateur.pseudo_client;
+  }
 
 
   // Si l'utilisateur est seul, on affiche un message spécifique
@@ -107,36 +104,10 @@ function clearMessages() {
     usersContainer.appendChild(userElem);
   }
 
-  if(socket.id== utilisateur.id_client){
-    pseudotest = utilisateur.pseudo_client;
-  }
   });
   });
 
-  // Création d'une room privée entre deux utilisateurs
-  createRoomButton.addEventListener('click', () => {
-    const emmet_id = $('#emmet_id').val();
-    const dest_id = $('#dest_id').val();
-    
-    // Envoi de la demande de création de room au serveur
-    socket.emit('create_room', { emmet_id, dest_id });
-  });
-
-  socket.on('room_created', (data) => {
-    const { roomName } = data;
-    
-    console.log(`Room ${roomName} créée`);
-  });
-
-
-
-
-
-
-
-
-
-
+/*
 function envoyerMessagePrive(dest_id,message){
 
   var laDate = new Date();
@@ -151,21 +122,23 @@ function envoyerMessagePrive(dest_id,message){
   
   socket.emit('emission_privé',message);
 }
+*/
+
 
 // Ecoute de l'événement 'reception_message'
 socket.on('reception_message', (message) => {
-  console.log(`Message reçu de ${message.emmet_id}: ${message.contenu}`);
+  console.log(`Message reçu de ${message.emet_id}: ${message.contenu}`);
 });
 
 // Ecoute de l'événement 'emission_privé'
 socket.on('emission_privé', (message) => {
-  console.log(`Message privé reçu de ${message.emmet_id}: ${message.msg}`);
+  console.log(`Message privé reçu de ${message.emet_id}: ${message.msg}`);
   // Si le message est destiné à l'utilisateur actuel, on l'affiche
   if (message.dest_id === socket.id) {
     const messageElem = document.createElement('div');
-    messageElem.innerHTML = '<p>' + messagePrive.pseudo + ": " + messagePrive.msg + '</p>';
+    messageElem.innerHTML = '<p>' + message.pseudo + ": " + message.msg + '</p>';
     messageContainer.appendChild(messageElem);
-    
+    lesMessages
   }
 });
 
@@ -179,83 +152,22 @@ function salon(id) {
   // Vérification si l'ID correspond à une conversation privée ou au salon général
   var isPrivate = id !== 'salon';
   console.log(id);
+  messageContainer.innerHTML = '';
+
   // Récupération de la liste des messages en fonction de l'ID
   var messages = isPrivate ? lesMessages.filter(msg => msg.to_id === id || msg.from_id === id) : lesMessages;
 
   // Vidage du conteneur des messages
-  var messageContainer = document.getElementById('messages');
-   messageContainer.innerHTML == "";
-
+  function clearMessages() {
+    var messageContainer = document.getElementById('message-container');
+    messageContainer.innerHTML = ''; // Suppression des éléments dans le conteneur de messages
+  }
   // Ajout des messages à l'interface
-  messages.forEach((message,messagePrive) => {
+  messages.forEach((message) => {
     const messageElem = document.createElement('div');
     messageElem.innerHTML = '<p>' + message.msg + '</p>';
-    messageElem.innerHTML = '<p>' + messagePrive.msg + '</p>';
     messageContainer.appendChild(messageElem);
   });
-  
 }
 
 
-function salon(id_utilisateur_dest) {
-  clearMessages(); // Effacement du contenu de la zone de messages
-
-  socket.emit('changement_salon', id_utilisateur_dest); // Demande au serveur de changer de salon
-
-  //document.getElementById('titre').innerHTML = 'Salon ' + lesMessages.dest_id; // Modification du titre de la page
-  input.value='';
-}
-
-function clearMessages() {
-  var messageContainer = document.getElementById('message-container');
-  messageContainer.innerHTML = ''; // Suppression des éléments dans le conteneur de messages
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-// Vérifie les messages non-lus, puis affiche un badge de notification
-// incrémenté à côté de l'utilisateur
-
-function check_unread() {
-  // Récupération de la liste des messages non-lus
-  var unreadMessages = lesMessages.filter(msg => !msg.isRead);
-
-  // Affichage du badge de notification
-  var badge = document.getElementById('badge');
-  if (unreadMessages.length > 0) {
-    badge.style.display = 'inline-block';
-    badge.innerHTML = unreadMessages.length.toString();
-  } else {
-    badge.style.display = 'none'; 
-    badge.innerHTML = ""; 
-  }
-
-  // Supprime le badge lorsque les messages sont lus
-  var messageContainer = document.getElementById('message-container');
-  messageContainer.addEventListener('click', (e) => {
-    if (e.target.nodeName === 'P') {
-      const msgText = e.target.textContent;
-      lesMessages.forEach((msg) => {
-        if (msg.msg === msgText) {
-          msg.isRead = true;
-        }
-      });
-
-      check_unread();
-    }
-  });
-}
-*/
